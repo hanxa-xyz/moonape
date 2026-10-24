@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moonape · GME tracker</title>
+<meta name="description" content="GME options chain, max pain, IV, Superstonk DD, SEC filings, yields and yen — refreshed by GitHub Actions.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.1/plotly.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="moon">🌙</span> <strong>moonape</strong> <span class="sub">GME study tracker</span></div>
+  <nav class="tabs" role="tablist">
+    <button data-tab="overview" class="active">Overview</button>
+    <button data-tab="options">Options</button>
+    <button data-tab="iv">IV</button>
+    <button data-tab="superstonk">Superstonk</button>
+    <button data-tab="sec">SEC</button>
+    <button data-tab="about">About</button>
+  </nav>
+  <div class="status" id="status">loading…</div>
+</header>
+
+<main>
+<section id="tab-overview" class="tab active">
+  <div class="tiles" id="tiles"></div>
+  <div class="grid two">
+    <figure><figcaption>GME vs SPY, last 5 sessions (indexed to first point = 100)</figcaption><div id="ch-intraday" class="chart"></div></figure>
+    <figure><figcaption>GME daily close, 1 year</figcaption><div id="ch-gme-daily" class="chart"></div></figure>
+    <figure><figcaption>Treasury par yields (2Y · 10Y · 30Y) and 10Y−2Y spread</figcaption><div id="ch-yields" class="chart"></div></figure>
+    <figure><figcaption>USD/JPY and DXY</figcaption><div id="ch-fx" class="chart"></div></figure>
+  </div>
+</section>
+
+<section id="tab-options" class="tab">
+  <div class="toolbar">
+    <label>Expiration <select id="exp-select"></select></label>
+    <span id="opt-meta" class="muted"></span>
+  </div>
+  <div class="grid two">
+    <figure><figcaption>Open interest by strike — calls above, puts below · max pain (orange) · spot (grey)</figcaption><div id="ch-oi" class="chart"></div></figure>
+    <figure><figcaption>Day volume by strike</figcaption><div id="ch-vol" class="chart"></div></figure>
+    <figure><figcaption>Pain curve: payout to holders if the stock settled at each strike</figcaption><div id="ch-pain" class="chart"></div></figure>
+    <figure><figcaption>Gamma exposure by strike, this expiration ($ per 1% move, dealer convention) · zero-gamma (dashed)</figcaption><div id="ch-gex" class="chart"></div></figure>
+  </div>
+  <figure><figcaption>Max pain, walls and put/call by expiration (OI is prior-day)</figcaption><div id="tbl-maxpain" class="tablewrap"></div></figure>
+  <div class="grid two">
+    <figure><figcaption>Front-expiry max pain vs spot, snapshot history</figcaption><div id="ch-mp-hist" class="chart"></div></figure>
+    <figure><figcaption>Put/call ratios (OI and day volume), snapshot history</figcaption><div id="ch-pc-hist" class="chart"></div></figure>
+    <figure><figcaption>FINRA off-exchange short volume share, GME</figcaption><div id="ch-finra" class="chart"></div></figure>
+    <figure><figcaption>OCC option volume by exchange, latest day</figcaption><div id="ch-occ" class="chart"></div></figure>
+  </div>
+</section>
+
+<section id="tab-iv" class="tab">
+  <div class="grid two">
+    <figure><figcaption>Term structure — ATM implied volatility by expiration</figcaption><div id="ch-term" class="chart"></div></figure>
+    <figure><figcaption>25-delta skew by expiration (put IV − call IV; positive = puts richer)</figcaption><div id="ch-skew" class="chart"></div></figure>
+    <figure><figcaption>Smile for the selected expiration (IV by strike)</figcaption><div id="ch-smile" class="chart"></div></figure>
+    <figure><figcaption>IV30 history (constant 30-day ATM, interpolated in variance)</figcaption><div id="ch-iv30" class="chart"></div></figure>
+  </div>
+  <figure><figcaption>Surface — mean IV by expiration × moneyness (K/S; puts below 1, calls above)</figcaption><div id="ch-surface" class="chart tall"></div></figure>
+</section>
+
+<section id="tab-superstonk" class="tab">
+  <div class="toolbar">
+    <div class="chips" id="flair-chips"></div>
+    <input id="post-search" type="search" placeholder="search titles…">
+  </div>
+  <div id="posts" class="posts"></div>
+</section>
+
+<section id="tab-sec" class="tab">
+  <div class="toolbar">
+    <div class="chips" id="sec-chips"></div>
+    <input id="sec-search" type="search" placeholder="filter form or description…">
+  </div>
+  <div id="filings" class="tablewrap"></div>
+  <h3>13F-HR filers reporting GME (CUSIP 36467W109), newest first</h3>
+  <div id="holders" class="tablewrap"></div>
+</section>
+
+<section id="tab-about" class="tab">
+  <div class="prose" id="about"></div>
+</section>
+</main>
+<footer>moonape · data: Alpaca (indicative options feed, IEX stocks), US Treasury, Yahoo, FRED, Reddit/Arctic Shift, SEC EDGAR, FINRA, OCC · not investment advice · <a href="https://github.com/hanxa-xyz/moonape">source</a></footer>
+<script src="app.js"></script>
+</body>
+</html>

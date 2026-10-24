@@ -1,0 +1,23 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore: ["data/**", "site/data/**"]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -q -e ".[dev]"
+      - run: ruff check src tests
+      - run: pytest -q
+      - name: whole pipeline on fixtures
+        env: { MOONAPE_FIXTURE: "1", MOONAPE_DATA: out/fixture-data }
+        run: |
+          moonape collect all --force --no-site
+          moonape backfill
+          moonape site --out out/fixture-site
+          test -s out/fixture-site/tiles.json && test -s out/fixture-site/options.json

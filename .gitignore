@@ -1,0 +1,12 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+out/
+*.duckdb
+*.duckdb.wal
+.DS_Store
+notebooks/.ipynb_checkpoints/
