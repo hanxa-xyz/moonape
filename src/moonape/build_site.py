@@ -226,6 +226,39 @@ def build_sec(con, out):
     write(out, "sec.json", {"filings": records(f), "holders_13f": records(h), "counts": records(counts)})
 
 
+def build_socials(con, out):
+    posts = q(con, "SELECT platform, account, account_name, post_id, created_at, text, url, likes, reposts, replies, quotes, views, is_reply, is_repost, "
+                   "is_quote, quoted_text, quoted_url, media_url, source FROM social_posts "
+                   "QUALIFY row_number() OVER (PARTITION BY platform, post_id ORDER BY fetched_at DESC) = 1 ORDER BY created_at DESC LIMIT 800")
+    accounts = q(con, "SELECT platform, account, any_value(account_name) AS account_name, count(DISTINCT post_id) AS n, max(created_at) AS latest "
+                      "FROM social_posts GROUP BY 1, 2 ORDER BY latest DESC")
+    configured = [{"platform": "x", "account": a.lower(), "account_name": n, "url": f"https://x.com/{a}"} for a, n in config.X_ACCOUNTS.items()] + \
+                 [{"platform": "truth", "account": a, "account_name": n, "url": f"https://truthsocial.com/@{a}"} for a, n in config.TRUTH_ACCOUNTS.items()]
+    write(out, "socials.json", {"posts": records(posts), "accounts": records(accounts), "configured": configured,
+                                "x_enabled": bool(config.TWITTERAPI_IO_KEY) or config.fixture_mode()})
+
+
+def build_library(con, out):
+    try:
+        from moonape.sources import library as lib
+        cat = lib.load_bookcase()
+    except Exception as e:  # noqa: BLE001
+        log.warning("library catalog unavailable: %s", e)
+        write(out, "library.json", {"books": [], "curated": [], "stats": {}})
+        return
+    stats = q(con, "SELECT blink, text_pages, text_chars, excerpt FROM library_books WHERE text_fetched "
+                   "QUALIFY row_number() OVER (PARTITION BY blink ORDER BY fetched_at DESC) = 1")
+    books = cat.merge(stats, on="blink", how="left") if not stats.empty else cat.assign(text_pages=None, text_chars=None, excerpt=None)
+    books = books.sort_values(["curated_rank", "title"], na_position="last")
+    curated = books[books["curated_rank"].notna()].sort_values(["curated_rank", "title"])
+    write(out, "library.json", {
+        "source": config.LIBRARY_BOOKCASE_URL, "owner": "zedinstead1 — SuperStonk Library of DD, Art Books, and Periodicals",
+        "books": records(books), "curated": [b for b in curated["blink"]],
+        "stats": {"books": int(len(cat)), "pages": int(cat["pages"].sum()), "with_text": int(stats["blink"].nunique()) if not stats.empty else 0,
+                  "text_chars": int(stats["text_chars"].sum()) if not stats.empty else 0},
+    })
+
+
 def build(out_dir: str | Path | None = None) -> Path:
     out = Path(out_dir) if out_dir else Path(config.SITE_DATA)
     con = store.connect()
@@ -241,6 +274,8 @@ def build(out_dir: str | Path | None = None) -> Path:
     build_iv(con, chain, term, hist, out)
     build_reddit(con, out)
     build_sec(con, out)
+    build_socials(con, out)
+    build_library(con, out)
     summ = store.summary()
     write(out, "meta.json", {
         "built_at": datetime.now(timezone.utc), "fixture": config.fixture_mode(), "version": "0.1.0",

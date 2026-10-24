@@ -32,6 +32,9 @@ HOST_MIN_INTERVAL = {
     "query1.finance.yahoo.com": 1.2,
     "query2.finance.yahoo.com": 1.2,
     "api.stlouisfed.org": 0.55,
+    "api.twitterapi.io": 0.5,
+    "www.trumpstruth.org": 1.0,
+    "online.fliphtml5.com": 1.2,
     "data.alpaca.markets": 0.31,
     "paper-api.alpaca.markets": 0.31,
     "api.alpaca.markets": 0.31,
@@ -79,7 +82,7 @@ class Http:
     # --- fixtures ---------------------------------------------------------------------------------
     def _fixture(self, name: str) -> FixtureResponse:
         base = config.FIXTURES / name
-        for ext in ("", ".json", ".csv", ".txt"):
+        for ext in ("", ".json", ".csv", ".txt", ".xml", ".js"):
             p = Path(str(base) + ext)
             if p.is_file():
                 return FixtureResponse(p)

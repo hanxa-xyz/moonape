@@ -13,7 +13,7 @@ from moonape import config, store
 from moonape.analytics import chain as chainmod
 from moonape.analytics import metrics
 from moonape.http import Http
-from moonape.sources import alpaca, edgar, finra, fred, occ, reddit, treasury, yahoo
+from moonape.sources import alpaca, edgar, finra, fred, library, occ, reddit, socials, treasury, yahoo
 
 log = logging.getLogger("moonape")
 
@@ -103,7 +103,43 @@ def collect_reddit(http: Http) -> Step:
     now = _now(http)
     st = Step()
     st.run("reddit_posts", lambda: _append_len("reddit_posts", reddit.fetch_latest(http), now), critical=True)
+    st.run("truth_posts", lambda: _append_len("social_posts", socials.fetch_truth(http), now, name=f"{now:%H%M}_truth"))
     return st
+
+
+def collect_socials(http: Http) -> Step:
+    """X accounts through twitterapi.io (paid per tweet, so on its own slower schedule) plus the keyless Truth Social mirror."""
+    now = _now(http)
+    st = Step()
+    if socials.x_available():
+        st.run("x_posts", lambda: _append_len("social_posts", socials.fetch_x(http), now, name=f"{now:%H%M}_x"))
+    else:
+        log.info("TWITTERAPI_IO_KEY not set — skipping X (Socials shows Truth Social only)")
+    st.run("truth_posts", lambda: _append_len("social_posts", socials.fetch_truth(http), now, name=f"{now:%H%M}_truth"))
+    return st
+
+
+def _library_todo(limit: int | None) -> list[str]:
+    books = library.load_bookcase()
+    done = set()
+    if store.exists("library_books"):
+        done = set(store.read("library_books", "SELECT DISTINCT blink FROM library_books WHERE text_fetched")["blink"])
+    todo = [b for b in books["blink"] if b not in done]
+    return todo if limit is None else todo[:limit]
+
+
+def collect_library(http: Http, now: datetime, limit: int | None) -> int:
+    """Catalog row for every book (idempotent) plus page text for the next `limit` books without it."""
+    books = library.load_bookcase()
+    todo = _library_todo(limit)
+    stats, text = library.fetch_books_text(http, todo)
+    merged = books.merge(stats, on="blink", how="left") if not stats.empty else books.assign(text_pages=None, text_chars=None, excerpt=None, text_fetched=False)
+    merged["text_fetched"] = merged["text_fetched"].fillna(False).astype(bool)
+    store.append("library_books", merged[merged["text_fetched"]] if not stats.empty else merged.head(0), now)
+    if not store.exists("library_books"):
+        store.append("library_books", merged, now, name="catalog")
+    store.append("library_text", text, now)
+    return len(text)
 
 
 def collect_daily(http: Http) -> Step:
@@ -121,6 +157,7 @@ def collect_daily(http: Http) -> Step:
     st.run("edgar_filings", lambda: _append_len("edgar_filings", edgar.all_submissions(http), now))
     st.run("edgar_13f", lambda: _append_len("edgar_13f", edgar.holders_13f(http, today - timedelta(days=120), today), now))
     st.run("macro_daily", lambda: _append_len("macro_intraday", yahoo.fetch_all(http, range_="5d", interval="1d"), now))
+    st.run("library_text", lambda: collect_library(http, now, config.LIBRARY_TEXT_PER_RUN))
     st.run("compact", lambda: store.compact_all(before=today.isoformat()))
     return st
 
@@ -152,6 +189,8 @@ def backfill(http: Http, years: int = 10) -> Step:
     st.run("finra_short_volume", lambda: _append_len("finra_short_volume", finra.fetch_recent(http, today, days=60), now, name="backfill"))
     st.run("occ_volume", lambda: _append_len("occ_volume", occ.fetch_recent(http, today, days=30), now, name="backfill"))
     st.run("macro_daily", lambda: _append_len("macro_intraday", yahoo.fetch_all(http, range_="2y", interval="1d"), now, name="backfill_daily"))
+    st.run("truth_posts", lambda: _append_len("social_posts", socials.truth_feed(http, limit=500), now, name="backfill_truth"))
+    st.run("library_text", lambda: collect_library(http, now, None))
     return st
 
 
@@ -167,7 +206,7 @@ def main(argv=None) -> int:
     ap.add_argument("--fixture", action="store_true", help="serve recorded responses instead of the network (MOONAPE_FIXTURE=1)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("collect", help="run collectors once")
-    c.add_argument("what", choices=["intraday", "reddit", "daily", "all"])
+    c.add_argument("what", choices=["intraday", "reddit", "socials", "daily", "all"])
     c.add_argument("--force", action="store_true", help="ignore the market-hours window")
     c.add_argument("--no-site", action="store_true", help="skip rebuilding site/data")
     b = sub.add_parser("backfill", help="history for every source that offers it")
@@ -192,6 +231,8 @@ def main(argv=None) -> int:
                 steps.append(collect_intraday(http, force=a.force or a.what == "all"))
             if a.what in ("reddit", "all"):
                 steps.append(collect_reddit(http))
+            if a.what in ("socials", "all"):
+                steps.append(collect_socials(http))
             if a.what in ("daily", "all"):
                 steps.append(collect_daily(http))
             for st in steps:

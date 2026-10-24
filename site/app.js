@@ -21,7 +21,7 @@
 
   const D = {};
   async function load() {
-    const names = ['meta', 'tiles', 'price_macro', 'options', 'iv', 'reddit', 'sec'];
+    const names = ['meta', 'tiles', 'price_macro', 'options', 'iv', 'reddit', 'sec', 'socials', 'library'];
     await Promise.all(names.map(async (n) => { try { const r = await fetch(`data/${n}.json?v=${Date.now() >> 16}`); D[n] = r.ok ? await r.json() : null; } catch (e) { D[n] = null; } }));
   }
 
@@ -212,6 +212,66 @@
     render();
   }
 
+  // ---------------------------------------------------------------- Socials
+  let acct = 'All';
+  function socials() {
+    const S = D.socials || {}; const posts = S.posts || []; const conf = S.configured || [];
+    const chips = $('#acct-chips');
+    chips.innerHTML = [`<span class="chip ${acct === 'All' ? 'active' : ''}" data-a="All">All</span>`, ...conf.map(c =>
+      `<span class="chip ${acct === c.account ? 'active' : ''}" data-a="${esc(c.account)}">${esc(c.account_name)}</span>`)].join('');
+    chips.querySelectorAll('.chip').forEach(c => c.onclick = () => { acct = c.dataset.a; socials(); });
+    const counts = (S.accounts || []).reduce((m, a) => { m[a.account] = a; return m; }, {});
+    $('#social-meta').textContent = S.x_enabled ? `${posts.length} posts` : 'X accounts need TWITTERAPI_IO_KEY; Truth Social is live';
+    $('#social-search').oninput = render;
+    function render() {
+      const qs = ($('#social-search').value || '').toLowerCase();
+      const rows = posts.filter(p => (acct === 'All' || p.account === acct) && (!qs || (p.text || '').toLowerCase().includes(qs)));
+      if (!rows.length) {
+        const c = conf.find(x => x.account === acct);
+        return empty('#social-feed', c && !counts[acct] ? `no posts collected yet for ${c.account_name} — <a href="${c.url}" target="_blank" rel="noopener">open on ${c.platform === 'x' ? 'X' : 'Truth Social'} ↗</a>` : 'no posts match');
+      }
+      $('#social-feed').innerHTML = rows.slice(0, 200).map(p => `<div class="post">
+        <div class="avatar ${p.platform}">${esc((p.account_name || '?').slice(0, 1))}</div>
+        <div><div class="who"><span class="n">${esc(p.account_name)}</span><span class="h">@${esc(p.account)}</span><span class="badge ${p.platform}">${p.platform === 'x' ? 'X' : 'Truth'}</span>
+          ${p.is_repost ? '<span class="badge">repost</span>' : ''}${p.is_quote ? '<span class="badge">quote</span>' : ''}${p.is_reply ? '<span class="badge">reply</span>' : ''}
+          <a class="h" href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc(p.created_at)}">${ago(p.created_at)} ↗</a></div>
+        <div class="body">${esc(p.text)}</div>
+        ${p.quoted_text ? `<div class="quote">${esc(p.quoted_text)}${p.quoted_url ? ` <a href="${esc(p.quoted_url)}" target="_blank" rel="noopener">↗</a>` : ''}</div>` : ''}
+        ${p.media_url ? `<img class="media" loading="lazy" src="${esc(p.media_url)}" alt="">` : ''}
+        ${p.likes != null ? `<div class="m"><span>♥ ${fmt0(p.likes)}</span><span>↻ ${fmt0(p.reposts)}</span><span>💬 ${fmt0(p.replies)}</span>${p.views != null ? `<span>👁 ${fmt0(p.views)}</span>` : ''}</div>` : ''}
+        </div></div>`).join('');
+    }
+    render();
+  }
+
+  // ---------------------------------------------------------------- Library
+  let libFilter = 'All';
+  function library() {
+    const L = D.library || {}; const books = L.books || []; const curated = new Set(L.curated || []);
+    const kinds = ['All', 'DD', 'Guides', 'Art & memes', 'Periodicals', 'Macro'];
+    const kind = (b) => { const t = (b.title || '').toLowerCase(); if (/superstonk guide|geographic|digest|gmedd/.test(t)) return 'Periodicals'; if (/artwork|collection|meme|pixel|stonker deck|lego|saga|christmas|stonks on the moon/.test(t)) return 'Art & memes'; if (/guide|faq|dictionary|how to|step-by-step|preparation|attorneys|financial advisors|rich/.test(t)) return 'Guides'; if (/fed|dollar|inflation|repo|treasury|liquidity|stagflation|evergrande|macro|2008|bubble|loan/.test(t)) return 'Macro'; return 'DD'; };
+    const chips = $('#lib-chips'); chips.innerHTML = kinds.map(k => `<span class="chip ${k === libFilter ? 'active' : ''}" data-k="${k}">${k}</span>`).join('');
+    chips.querySelectorAll('.chip').forEach(c => c.onclick = () => { libFilter = c.dataset.k; library(); });
+    const st = L.stats || {};
+    $('#lib-meta').innerHTML = st.books ? `${fmt0(st.books)} books · ${fmt0(st.pages)} pages · text indexed for ${fmt0(st.with_text)} · <a href="${esc(L.source)}" target="_blank" rel="noopener">bookcase ↗</a>` : '';
+    const card = (b) => `<div class="book"><a href="${esc(b.url)}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(b.cover)}" alt=""></a>
+      <div class="bt"><a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.title)}</a></div>
+      <div class="bm">${esc(b.description || '')}${b.description ? ' · ' : ''}${fmt0(b.pages)} pp · ${b.added}</div>
+      ${b.excerpt ? `<div class="bx">${esc(b.excerpt)}</div><div class="more" data-more>more</div>` : ''}</div>`;
+    $('#lib-search').oninput = render;
+    function render() {
+      const qs = ($('#lib-search').value || '').toLowerCase();
+      const match = (b) => (libFilter === 'All' || kind(b) === libFilter) && (!qs || `${b.title} ${b.description || ''} ${b.excerpt || ''}`.toLowerCase().includes(qs));
+      const shelf = books.filter(b => curated.has(b.blink) && match(b));
+      $('#lib-shelf-title').style.display = shelf.length ? '' : 'none';
+      $('#lib-shelf').innerHTML = shelf.map(card).join('');
+      const rest = books.filter(b => !curated.has(b.blink) && match(b)).sort((x, y) => (y.added > x.added ? 1 : -1));
+      $('#lib-grid').innerHTML = rest.length ? rest.map(card).join('') : (books.length ? '<div class="empty">no books match</div>' : '<div class="empty">no catalog yet — library/bookcase.json missing</div>');
+      document.querySelectorAll('[data-more]').forEach(m => m.onclick = () => { const bx = m.previousElementSibling; bx.classList.toggle('open'); m.textContent = bx.classList.contains('open') ? 'less' : 'more'; });
+    }
+    render();
+  }
+
   // ---------------------------------------------------------------- SEC
   let secEntity = 'All';
   function sec() {
@@ -255,5 +315,5 @@
       <p class="muted">Raw parquet lives in <code>data/</code> of the repo; query it with DuckDB: <code>moonape db --sql "select … from option_chain"</code>.</p>`;
   }
 
-  load().then(() => { status(); tiles(); overview(); options(); iv(); reddit(); sec(); about(); });
+  load().then(() => { status(); tiles(); overview(); options(); iv(); reddit(); socials(); sec(); library(); about(); });
 })();

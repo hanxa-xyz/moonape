@@ -71,5 +71,29 @@ REDDIT_USER_AGENT = os.environ.get("REDDIT_USER_AGENT", "script:moonape:0.1 (by 
 SEC_USER_AGENT = os.environ.get("SEC_USER_AGENT", "moonape contact-not-set@example.com")
 
 SUBREDDITS = ["Superstonk", "GME"]
+
+# Socials: X accounts (read through twitterapi.io; needs TWITTERAPI_IO_KEY) and Truth Social (trumpstruth.org RSS mirror, keyless)
+X_ACCOUNTS = {
+    "ryancohen": "Ryan Cohen",
+    "TheRoaringKitty": "Roaring Kitty",
+    "larryvc": "Larry Cheng",
+    "greg16676935420": "Greg",
+    "elonmusk": "Elon Musk",
+    "GameStop": "GameStop",
+}
+TRUTH_ACCOUNTS = {"realDonaldTrump": "Donald J. Trump"}
+TWITTERAPI_IO_KEY = os.environ.get("TWITTERAPI_IO_KEY", "")
+X_PAGES_PER_ACCOUNT = int(os.environ.get("X_PAGES_PER_ACCOUNT", "1"))  # 20 tweets per page; each returned tweet costs ~$0.00015
+
+# Library: the public FlipHTML5 bookcase "SuperStonk Library of DD, Art Books, and Periodicals" (user zedinstead1)
+LIBRARY_BOOKCASE_URL = "https://fliphtml5.com/bookcase/kosyg"
+LIBRARY_ULINK = "lvrgy"
+LIBRARY_BOOKCASE_FILE = ROOT / "library" / "bookcase.json"  # captured from the bookcase page (Cloudflare-walled for scripts)
+LIBRARY_TEXT_PER_RUN = int(os.environ.get("LIBRARY_TEXT_PER_RUN", "25"))
+LIBRARY_CURATED = [  # the "start here" shelf, matched on title substring, in this order
+    "Diamond Handbook", "DD Mega Back Up", "House of Cards", "The Everything Short", "Citadel Has No Clothes", "The Bigger Short",
+    "Dollar Endgame", "Naked Short Scam", "Infinity Pool", "Cellar Boxing", "Direct Registered Shares Thesis", "Computershare DD Series",
+    "MOASS Thesis Summary", "Dictionary For The Non-Ape", "GMEdd.com November",
+]
 SUBREDDIT = SUBREDDITS[0]  # kept for backwards compatibility
 DD_FLAIR = "Due Diligence"  # the live flair string is "📚 Due Diligence"; matched by substring

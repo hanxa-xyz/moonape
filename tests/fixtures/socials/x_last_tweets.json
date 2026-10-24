@@ -1,0 +1,311 @@
+{
+ "status": "success",
+ "code": 0,
+ "msg": "success",
+ "data": {
+  "pin_tweet": null,
+  "tweets": [
+   {
+    "type": "tweet",
+    "id": "198000000000000001",
+    "url": "https://x.com/fixtureuser/status/198000000000000001",
+    "text": "Hiring builders obsessed with SI. ta@gamestop.com",
+    "source": "",
+    "retweetCount": 120,
+    "replyCount": 40,
+    "likeCount": 900,
+    "quoteCount": 10,
+    "viewCount": 50000,
+    "createdAt": "Fri Oct 23 08:00:00 +0000 2026",
+    "lang": "en",
+    "bookmarkCount": 5,
+    "isReply": false,
+    "inReplyToId": null,
+    "conversationId": "198000000000000001",
+    "displayTextRange": [
+     0,
+     49
+    ],
+    "inReplyToUserId": null,
+    "inReplyToUsername": null,
+    "author": {
+     "type": "user",
+     "userName": "fixtureuser",
+     "url": "https://x.com/fixtureuser",
+     "id": "1",
+     "name": "Fixture User",
+     "isBlueVerified": true,
+     "profilePicture": "",
+     "followers": 1000000,
+     "following": 10
+    },
+    "entities": {
+     "hashtags": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "quoted_tweet": null,
+    "retweeted_tweet": null,
+    "isLimitedReply": false
+   },
+   {
+    "type": "tweet",
+    "id": "198000000000000002",
+    "url": "https://x.com/fixtureuser/status/198000000000000002",
+    "text": "Power to the players.",
+    "source": "",
+    "retweetCount": 240,
+    "replyCount": 80,
+    "likeCount": 1800,
+    "quoteCount": 20,
+    "viewCount": 100000,
+    "createdAt": "Fri Oct 23 01:00:00 +0000 2026",
+    "lang": "en",
+    "bookmarkCount": 5,
+    "isReply": false,
+    "inReplyToId": null,
+    "conversationId": "198000000000000002",
+    "displayTextRange": [
+     0,
+     21
+    ],
+    "inReplyToUserId": null,
+    "inReplyToUsername": null,
+    "author": {
+     "type": "user",
+     "userName": "fixtureuser",
+     "url": "https://x.com/fixtureuser",
+     "id": "1",
+     "name": "Fixture User",
+     "isBlueVerified": true,
+     "profilePicture": "",
+     "followers": 1000000,
+     "following": 10
+    },
+    "entities": {
+     "hashtags": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "quoted_tweet": {
+     "type": "tweet",
+     "id": "198000000000000009",
+     "url": "https://x.com/GameStop/status/1980000000000009",
+     "text": "GameStop Q3 results are out.",
+     "source": "",
+     "retweetCount": 1080,
+     "replyCount": 360,
+     "likeCount": 8100,
+     "quoteCount": 90,
+     "viewCount": 450000,
+     "createdAt": "Wed Oct 21 00:00:00 +0000 2026",
+     "lang": "en",
+     "bookmarkCount": 5,
+     "isReply": false,
+     "inReplyToId": null,
+     "conversationId": "198000000000000009",
+     "displayTextRange": [
+      0,
+      28
+     ],
+     "inReplyToUserId": null,
+     "inReplyToUsername": null,
+     "author": {
+      "type": "user",
+      "userName": "fixtureuser",
+      "url": "https://x.com/fixtureuser",
+      "id": "1",
+      "name": "Fixture User",
+      "isBlueVerified": true,
+      "profilePicture": "",
+      "followers": 1000000,
+      "following": 10
+     },
+     "entities": {
+      "hashtags": [],
+      "urls": [],
+      "user_mentions": []
+     },
+     "quoted_tweet": null,
+     "retweeted_tweet": null,
+     "isLimitedReply": false
+    },
+    "retweeted_tweet": null,
+    "isLimitedReply": false
+   },
+   {
+    "type": "tweet",
+    "id": "198000000000000003",
+    "url": "https://x.com/fixtureuser/status/198000000000000003",
+    "text": "RT @GameStop: Pre-orders live now.",
+    "source": "",
+    "retweetCount": 360,
+    "replyCount": 120,
+    "likeCount": 2700,
+    "quoteCount": 30,
+    "viewCount": 150000,
+    "createdAt": "Thu Oct 22 18:00:00 +0000 2026",
+    "lang": "en",
+    "bookmarkCount": 5,
+    "isReply": false,
+    "inReplyToId": null,
+    "conversationId": "198000000000000003",
+    "displayTextRange": [
+     0,
+     34
+    ],
+    "inReplyToUserId": null,
+    "inReplyToUsername": null,
+    "author": {
+     "type": "user",
+     "userName": "fixtureuser",
+     "url": "https://x.com/fixtureuser",
+     "id": "1",
+     "name": "Fixture User",
+     "isBlueVerified": true,
+     "profilePicture": "",
+     "followers": 1000000,
+     "following": 10
+    },
+    "entities": {
+     "hashtags": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "quoted_tweet": null,
+    "retweeted_tweet": {
+     "type": "tweet",
+     "id": "198000000000000008",
+     "url": "https://x.com/GameStop/status/1980000000000008",
+     "text": "Pre-orders live now.",
+     "source": "",
+     "retweetCount": 960,
+     "replyCount": 320,
+     "likeCount": 7200,
+     "quoteCount": 80,
+     "viewCount": 400000,
+     "createdAt": "Wed Oct 21 07:00:00 +0000 2026",
+     "lang": "en",
+     "bookmarkCount": 5,
+     "isReply": false,
+     "inReplyToId": null,
+     "conversationId": "198000000000000008",
+     "displayTextRange": [
+      0,
+      20
+     ],
+     "inReplyToUserId": null,
+     "inReplyToUsername": null,
+     "author": {
+      "type": "user",
+      "userName": "fixtureuser",
+      "url": "https://x.com/fixtureuser",
+      "id": "1",
+      "name": "Fixture User",
+      "isBlueVerified": true,
+      "profilePicture": "",
+      "followers": 1000000,
+      "following": 10
+     },
+     "entities": {
+      "hashtags": [],
+      "urls": [],
+      "user_mentions": []
+     },
+     "quoted_tweet": null,
+     "retweeted_tweet": null,
+     "isLimitedReply": false
+    },
+    "isLimitedReply": false
+   },
+   {
+    "type": "tweet",
+    "id": "198000000000000004",
+    "url": "https://x.com/fixtureuser/status/198000000000000004",
+    "text": "Buy, hold, DRS.",
+    "source": "",
+    "retweetCount": 480,
+    "replyCount": 160,
+    "likeCount": 3600,
+    "quoteCount": 40,
+    "viewCount": 200000,
+    "createdAt": "Thu Oct 22 11:00:00 +0000 2026",
+    "lang": "en",
+    "bookmarkCount": 5,
+    "isReply": false,
+    "inReplyToId": null,
+    "conversationId": "198000000000000004",
+    "displayTextRange": [
+     0,
+     15
+    ],
+    "inReplyToUserId": null,
+    "inReplyToUsername": null,
+    "author": {
+     "type": "user",
+     "userName": "fixtureuser",
+     "url": "https://x.com/fixtureuser",
+     "id": "1",
+     "name": "Fixture User",
+     "isBlueVerified": true,
+     "profilePicture": "",
+     "followers": 1000000,
+     "following": 10
+    },
+    "entities": {
+     "hashtags": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "quoted_tweet": null,
+    "retweeted_tweet": null,
+    "isLimitedReply": false
+   },
+   {
+    "type": "tweet",
+    "id": "198000000000000005",
+    "url": "https://x.com/fixtureuser/status/198000000000000005",
+    "text": "A reply to someone",
+    "source": "",
+    "retweetCount": 600,
+    "replyCount": 200,
+    "likeCount": 4500,
+    "quoteCount": 50,
+    "viewCount": 250000,
+    "createdAt": "Thu Oct 22 04:00:00 +0000 2026",
+    "lang": "en",
+    "bookmarkCount": 5,
+    "isReply": true,
+    "inReplyToId": null,
+    "conversationId": "198000000000000005",
+    "displayTextRange": [
+     0,
+     18
+    ],
+    "inReplyToUserId": null,
+    "inReplyToUsername": "someone",
+    "author": {
+     "type": "user",
+     "userName": "fixtureuser",
+     "url": "https://x.com/fixtureuser",
+     "id": "1",
+     "name": "Fixture User",
+     "isBlueVerified": true,
+     "profilePicture": "",
+     "followers": 1000000,
+     "following": 10
+    },
+    "entities": {
+     "hashtags": [],
+     "urls": [],
+     "user_mentions": []
+    },
+    "quoted_tweet": null,
+    "retweeted_tweet": null,
+    "isLimitedReply": false
+   }
+  ]
+ },
+ "has_next_page": false,
+ "next_cursor": ""
+}

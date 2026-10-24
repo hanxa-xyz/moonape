@@ -17,7 +17,9 @@
     <button data-tab="options">Options</button>
     <button data-tab="iv">IV</button>
     <button data-tab="reddit">Reddit</button>
+    <button data-tab="socials">Socials</button>
     <button data-tab="sec">SEC</button>
+    <button data-tab="library">Library</button>
     <button data-tab="about">About</button>
   </nav>
   <div class="status" id="status">loading…</div>
@@ -73,6 +75,15 @@
   <div id="posts" class="posts"></div>
 </section>
 
+<section id="tab-socials" class="tab">
+  <div class="toolbar">
+    <div class="chips" id="acct-chips"></div>
+    <input id="social-search" type="search" placeholder="search posts…">
+    <span id="social-meta" class="muted"></span>
+  </div>
+  <div id="social-feed" class="posts feed"></div>
+</section>
+
 <section id="tab-sec" class="tab">
   <div class="toolbar">
     <div class="chips" id="sec-chips"></div>
@@ -81,6 +92,18 @@
   <div id="filings" class="tablewrap"></div>
   <h3>13F-HR filers reporting GME (CUSIP 36467W109), newest first</h3>
   <div id="holders" class="tablewrap"></div>
+</section>
+
+<section id="tab-library" class="tab">
+  <div class="toolbar">
+    <input id="lib-search" type="search" placeholder="search titles, authors, excerpts…">
+    <div class="chips" id="lib-chips"></div>
+    <span id="lib-meta" class="muted"></span>
+  </div>
+  <h3 id="lib-shelf-title">Start here</h3>
+  <div id="lib-shelf" class="shelf"></div>
+  <h3>All books</h3>
+  <div id="lib-grid" class="bookgrid"></div>
 </section>
 
 <section id="tab-about" class="tab">

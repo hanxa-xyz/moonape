@@ -22,7 +22,7 @@ log = logging.getLogger("moonape.store")
 DATASETS = [
     "stock_snapshots", "stock_bars", "option_contracts", "option_chain", "chain_metrics",
     "macro_intraday", "treasury_curve", "fred", "reddit_posts", "edgar_filings", "edgar_13f",
-    "finra_short_volume", "occ_volume",
+    "finra_short_volume", "occ_volume", "social_posts", "library_books", "library_text",
 ]
 
 

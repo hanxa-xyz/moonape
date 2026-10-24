@@ -8,7 +8,10 @@ Scheduled collectors (GitHub Actions) + a static dashboard (GitHub Pages at **mo
 | **Whole options chain**: bid/ask, last, day volume, **Greeks, IV** per contract | Alpaca `/v1beta1/options/snapshots/GME` (indicative feed, free) | every 30 min in market hours |
 | **Open interest** per contract (prior day) | Alpaca Trading API `/v2/options/contracts` | daily + first run of the day |
 | **Max pain**, call/put walls, P/C ratios, **GEX** and zero-gamma, **IV term structure, 25Δ skew, IV30, IV rank, surface** | computed from the two above | every snapshot |
-| Newest r/Superstonk posts + **Due Diligence** flair | Reddit OAuth (script app) or Arctic Shift (keyless) | hourly, 7 days |
+| Newest r/Superstonk and r/GME posts + **Due Diligence** flair | Reddit OAuth (script app) or Arctic Shift (keyless) | hourly, 7 days |
+| **Socials**: X posts from @ryancohen, @TheRoaringKitty, @larryvc, @greg16676935420, @elonmusk, @GameStop | twitterapi.io (paid reseller, ~$0.15 per 1k tweets; `TWITTERAPI_IO_KEY`) | 4×/day |
+| **Socials**: Trump on Truth Social | trumpstruth.org RSS mirror (keyless) | hourly |
+| **Library**: the 250-book "SuperStonk Library of DD, Art Books, and Periodicals" (FlipHTML5 bookcase) — catalog, covers, per-page text for search and excerpts | bookcase listing captured in `library/bookcase.json`; text from each flipbook's public search index | daily, 25 books per run |
 | SEC filings: GameStop, Ryan Cohen, Keith Gill; 13F-HR filers holding GME | EDGAR submissions JSON + full-text search | daily |
 | Treasury par curve (2Y/10Y/30Y, 10Y−2Y) | US Treasury CSV (keyless, same-day) + FRED history | daily |
 | USD/JPY, DXY, intraday yields | Yahoo chart JSON (keyless) | every 30 min |
@@ -24,6 +27,9 @@ Raw rows land as parquet in `data/` (one file per run, compacted per day) and ar
 2. Optional, FRED: fredaccount.stlouisfed.org → API Keys → `FRED_API_KEY` (yield/yen history; the Treasury CSV covers the daily curve without it).
 3. Optional, Reddit: reddit.com/prefs/apps → *create another app* → type **script**, redirect `http://localhost` → `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`. Until then Arctic Shift supplies the same posts.
 4. `SEC_USER_AGENT="moonape you@example.com"` — EDGAR requires a contact address in the User-Agent.
+5. Optional, X: create a key at twitterapi.io (free $1 trial, then ~$0.15 per 1,000 tweets; our cadence is ~1,700 tweets/week) → `TWITTERAPI_IO_KEY`.
+   There is no free, terms-clean way to read X timelines in 2026 (syndication endpoints are dead, Nitter is gone, the official API is pay-per-use only).
+   Until the key exists the Socials tab shows Truth Social and links out to the X profiles.
 
 ```bash
 cp .env.example .env   # fill in the keys
@@ -38,7 +44,8 @@ Then trigger the workflows once (`gh workflow run intraday.yml -f force=true`, `
 
 ### Schedules (UTC crons; the intraday job checks Alpaca's calendar and exits when the market is closed)
 - `intraday.yml` — `7,37 13-21 * * 1-5` (09:30–16:00 ET in EDT and EST, plus one post-close snapshot)
-- `reddit.yml` — `15 * * * *`
+- `reddit.yml` — `15 * * * *` (both subreddits + the Truth Social mirror)
+- `socials.yml` — `25 1,7,13,19 * * *` (X through twitterapi.io; raise the cadence or `X_PAGES_PER_ACCOUNT` once you know the bill)
 - `daily.yml` — `45 22 * * 1-5` (contracts/OI, Treasury, FRED, FINRA, OCC, EDGAR, compaction); `-f backfill=true` for history
 - `pages.yml` — deploys `site/` on every push that touches it; `ci.yml` — ruff + pytest + the whole pipeline on fixtures
 
@@ -71,7 +78,10 @@ Alpaca has no FX or yield-curve data (its 2026 fixed-income quotes are T-bills f
 | `macro_intraday` | ticker × ts × interval | close (yields in %, FX level) |
 | `treasury_curve` | date × tenor | yield |
 | `fred` | series × date | value |
-| `reddit_posts` | post × fetch (dedupe by id) | created_utc, title, flair, score, num_comments, selftext |
+| `reddit_posts` | post × fetch (dedupe by id) | subreddit, created_utc, title, flair, score, num_comments, selftext |
+| `social_posts` | post × fetch (dedupe by platform, post_id) | platform (x/truth), account, created_at, text, likes/reposts/replies/views, is_repost/is_quote, media_url |
+| `library_books` | book × fetch (dedupe by blink) | title, description, pages, added, url, cover, curated_rank, text_pages, excerpt |
+| `library_text` | book × page | blink, page, text — the full text layer for DuckDB search; not published on the site |
 | `edgar_filings` | filing × fetch (dedupe by accession) | entity, form, filing_date, url |
 | `edgar_13f` | 13F filing × fetch | filer, cik, file_date, period_ending |
 | `finra_short_volume` | date × symbol | short_volume, total_volume, short_share |
@@ -86,6 +96,12 @@ Alpaca has no FX or yield-curve data (its 2026 fixed-income quotes are T-bills f
 ## Storage ceiling
 ~2.5k GME contracts × ~16 snapshots/day ≈ 1.5 MB/day of zstd parquet → the repo reaches ~1 GB in about 18 months. The Pages artifact excludes `data/`.
 Moving `data/` to object storage (R2) or GitHub Releases is a change inside `store.py` only.
+
+## Library notes
+The bookcase page (fliphtml5.com/bookcase/kosyg) sits behind Cloudflare for scripts, so its 250-row listing is captured from a browser into
+`library/bookcase.json` and committed; refresh it when the shelf changes. Per-book text comes from `online.fliphtml5.com/lvrgy/<book>/files/search/search_config.js`
+(public, keyless, not disallowed by robots.txt). FlipHTML5's terms forbid republishing, so the site shows catalog + a short excerpt and links to the flipbook;
+the full text stays in `data/library_text` for your own search: `moonape db --sql "select blink, page, text from library_text where text ilike '%swap%'"`.
 
 ## Follow-ups
 - IV history before the tracker started: invert Black-Scholes on Alpaca option bars (since 2024-02) so IV rank is meaningful on day one.
