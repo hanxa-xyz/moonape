@@ -33,3 +33,11 @@ jobs:
         run: moonape collect intraday ${{ inputs.force && '--force' || '' }}
       - if: always()  # commit whatever succeeded even when a collector failed
         run: .github/workflows/_commit.sh "intraday $(date -u +%Y-%m-%dT%H:%M)"
+  pages:
+    needs: collect
+    if: always()   # partial results are committed even when a collector failed, so always republish
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

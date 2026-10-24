@@ -40,3 +40,11 @@ jobs:
         run: moonape backfill && moonape site
       - if: always()  # commit whatever succeeded even when a collector failed
         run: .github/workflows/_commit.sh "daily $(date -u +%Y-%m-%d)"
+  pages:
+    needs: collect
+    if: always()   # partial results are committed even when a collector failed, so always republish
+    uses: ./.github/workflows/pages.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

@@ -1,5 +1,8 @@
 name: pages
+# Deploys site/ to GitHub Pages. Called by every collector after it commits (pushes made with GITHUB_TOKEN never trigger
+# other workflows, so a plain `on: push` would miss every bot commit), and also on human pushes that touch site/.
 on:
+  workflow_call:
   push:
     branches: [main]
     paths: ["site/**"]
@@ -19,6 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with: { ref: main }   # the branch tip, which includes the commit the calling collector just pushed
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
