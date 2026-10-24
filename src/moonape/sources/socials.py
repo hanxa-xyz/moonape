@@ -93,7 +93,7 @@ def _split_truth(desc_html: str, kind: str | None) -> tuple[str, str | None]:
     m = re.search(r"<p>\s*(Quoted|Reposted)\s+<a[^>]*>.*?</a>", desc_html, flags=re.S)
     main_html, tail_html = (desc_html[:m.start()], desc_html[m.end():]) if m else (desc_html, "")
     # reposts open with `RT <span class="h-card"><a>@<span>handle</span></a></span>` glued to the body; drop it structurally
-    main_html = re.sub(r"^\s*<p>\s*RT\s*<span class=\"h-card\">.*?</span>\s*</span>\s*", "<p>", main_html, count=1, flags=re.S)
+    main_html = re.sub(r"^\s*<p>\s*RT\s*<span class=\"h-card\">.*?</a>\s*</span>\s*", "<p>", main_html, count=1, flags=re.S)
     text = _strip(main_html)
     text = re.sub(r"^\s*RT:\s*https?://\S*?/statuses/\d+\s*", "", text)  # "RT: <original url>" prefix on quotes (no space follows)
     handles = "|".join(re.escape(h) for h in config.TRUTH_ACCOUNTS)
