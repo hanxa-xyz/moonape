@@ -31,6 +31,10 @@ class MissingCredentials(RuntimeError):
     pass
 
 
+def has_credentials() -> bool:
+    return bool(config.ALPACA_KEY and config.ALPACA_SECRET) or config.fixture_mode()
+
+
 def _headers() -> dict:
     if not config.ALPACA_KEY or not config.ALPACA_SECRET:
         if config.fixture_mode():

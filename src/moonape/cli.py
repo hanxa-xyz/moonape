@@ -66,9 +66,16 @@ def collect_contracts(http: Http, now: datetime) -> int:
     return len(df)
 
 
+NO_ALPACA = "APCA_API_KEY_ID / APCA_API_SECRET_KEY not set — skipping Alpaca (see .env.example); other collectors still run"
+
+
 def collect_intraday(http: Http, force: bool = False) -> Step:
     now = _now(http)
     st = Step()
+    if not alpaca.has_credentials():
+        log.warning(NO_ALPACA)
+        st.run("macro_intraday", lambda: _append_len("macro_intraday", yahoo.fetch_all(http), now))
+        return st
     if not force:
         ok, why = alpaca.in_collection_window(http, now)
         if not ok:
@@ -146,7 +153,10 @@ def collect_daily(http: Http) -> Step:
     now = _now(http)
     today = now.date()
     st = Step()
-    st.run("option_contracts", lambda: collect_contracts(http, now))
+    if alpaca.has_credentials():
+        st.run("option_contracts", lambda: collect_contracts(http, now))
+    else:
+        log.warning(NO_ALPACA)
     st.run("treasury_curve", lambda: _append_len("treasury_curve", treasury.fetch_year(http, today.year), now))
     if fred.available():
         st.run("fred", lambda: _append_len("fred", fred.fetch_all(http, start=(today - timedelta(days=45)).isoformat()), now))
@@ -168,9 +178,12 @@ def backfill(http: Http, years: int = 10) -> Step:
     today = now.date()
     st = Step()
     start = datetime(today.year - years, 1, 1, tzinfo=timezone.utc)
-    st.run("stock_bars_1Day", lambda: _append_len("stock_bars", alpaca.stock_bars(http, config.STOCKS, "1Day", start), now, name="backfill_1Day"))
-    st.run("stock_bars_15Min", lambda: _append_len("stock_bars", alpaca.stock_bars(http, config.STOCKS, "15Min", now - timedelta(days=90)), now,
-                                                   name="backfill_15Min"))
+    if alpaca.has_credentials():
+        st.run("stock_bars_1Day", lambda: _append_len("stock_bars", alpaca.stock_bars(http, config.STOCKS, "1Day", start), now, name="backfill_1Day"))
+        st.run("stock_bars_15Min", lambda: _append_len("stock_bars", alpaca.stock_bars(http, config.STOCKS, "15Min", now - timedelta(days=90)), now,
+                                                       name="backfill_15Min"))
+    else:
+        log.warning(NO_ALPACA)
 
     def treasury_years():
         n = 0
