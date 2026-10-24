@@ -14,7 +14,7 @@ Scheduled collectors (GitHub Actions) + a static dashboard (GitHub Pages at **mo
 | **Library**: the 250-book "SuperStonk Library of DD, Art Books, and Periodicals" (FlipHTML5 bookcase) — catalog, covers, per-page text for search and excerpts | bookcase listing captured in `library/bookcase.json`; text from each flipbook's public search index | daily, 25 books per run |
 | SEC filings: GameStop, Ryan Cohen, Keith Gill; 13F-HR filers holding GME | EDGAR submissions JSON + full-text search | daily |
 | Treasury par curve (2Y/10Y/30Y, 10Y−2Y) | US Treasury CSV (keyless, same-day) + FRED history | daily |
-| USD/JPY, DXY, intraday yields | Yahoo chart JSON (keyless) | every 30 min |
+| USD/JPY, DXY, intraday yields | Yahoo chart JSON (keyless; rate-limits GitHub runners, so best effort) + Frankfurter/ECB USD/JPY daily (keyless, reliable) | every 30 min / daily |
 | FINRA off-exchange short volume, OCC option volume by exchange | FINRA CDN, OCC marketdata (keyless) | daily |
 
 Raw rows land as parquet in `data/` (one file per run, compacted per day) and are the study dataset: `moonape db --sql "select … from option_chain"`.

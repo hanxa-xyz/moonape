@@ -13,7 +13,7 @@ from moonape import config, store
 from moonape.analytics import chain as chainmod
 from moonape.analytics import metrics
 from moonape.http import Http
-from moonape.sources import alpaca, edgar, finra, fred, library, occ, reddit, socials, treasury, yahoo
+from moonape.sources import alpaca, edgar, finra, fred, fx, library, occ, reddit, socials, treasury, yahoo
 
 log = logging.getLogger("moonape")
 
@@ -157,6 +157,7 @@ def collect_daily(http: Http) -> Step:
     st.run("edgar_filings", lambda: _append_len("edgar_filings", edgar.all_submissions(http), now))
     st.run("edgar_13f", lambda: _append_len("edgar_13f", edgar.holders_13f(http, today - timedelta(days=120), today), now))
     st.run("macro_daily", lambda: _append_len("macro_intraday", yahoo.fetch_all(http, range_="5d", interval="1d"), now))
+    st.run("usdjpy_ecb", lambda: _append_len("macro_intraday", fx.usdjpy_latest(http), now, name=f"{now:%H%M}_fx"))
     st.run("library_text", lambda: collect_library(http, now, config.LIBRARY_TEXT_PER_RUN))
     st.run("compact", lambda: store.compact_all(before=today.isoformat()))
     return st
@@ -189,6 +190,7 @@ def backfill(http: Http, years: int = 10) -> Step:
     st.run("finra_short_volume", lambda: _append_len("finra_short_volume", finra.fetch_recent(http, today, days=60), now, name="backfill"))
     st.run("occ_volume", lambda: _append_len("occ_volume", occ.fetch_recent(http, today, days=30), now, name="backfill"))
     st.run("macro_daily", lambda: _append_len("macro_intraday", yahoo.fetch_all(http, range_="2y", interval="1d"), now, name="backfill_daily"))
+    st.run("usdjpy_ecb", lambda: _append_len("macro_intraday", fx.usdjpy_history(http, f"{today.year - years}-01-01"), now, name="backfill_fx"))
     st.run("truth_posts", lambda: _append_len("social_posts", socials.truth_feed(http, limit=500), now, name="backfill_truth"))
     st.run("library_text", lambda: collect_library(http, now, None))
     return st

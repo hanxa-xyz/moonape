@@ -1,6 +1,6 @@
 from datetime import date, datetime, timezone
 
-from moonape.sources import alpaca, edgar, finra, fred, occ, reddit, treasury, yahoo
+from moonape.sources import alpaca, edgar, finra, fred, fx, occ, reddit, treasury, yahoo
 
 
 def test_alpaca_clock_and_window(http):
@@ -81,3 +81,10 @@ def test_occ(http):
     o = occ.fetch_day(http, date(2026, 10, 23))
     assert set(o["side"]) == {"call", "put"} and o["quantity"].sum() > 300_000
     assert o["exchange"].nunique() > 10
+
+
+def test_frankfurter_usdjpy(http):
+    latest = fx.usdjpy_latest(http)
+    assert len(latest) == 1 and 100 < latest["close"].iloc[0] < 250 and latest["ticker"].iloc[0] == "JPY=X"
+    hist = fx.usdjpy_history(http, "2026-09-01")
+    assert len(hist) > 30 and hist["ts"].is_monotonic_increasing and hist["ts"].dt.tz is not None

@@ -22,4 +22,5 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
         run: moonape collect reddit
-      - run: .github/workflows/_commit.sh "reddit $(date -u +%Y-%m-%dT%H:%M)"
+      - if: always()  # commit whatever succeeded even when a collector failed
+        run: .github/workflows/_commit.sh "reddit $(date -u +%Y-%m-%dT%H:%M)"

@@ -38,4 +38,5 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: moonape backfill && moonape site
-      - run: .github/workflows/_commit.sh "daily $(date -u +%Y-%m-%d)"
+      - if: always()  # commit whatever succeeded even when a collector failed
+        run: .github/workflows/_commit.sh "daily $(date -u +%Y-%m-%d)"

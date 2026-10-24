@@ -31,4 +31,5 @@ jobs:
           APCA_API_SECRET_KEY: ${{ secrets.APCA_API_SECRET_KEY }}
           SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: moonape collect intraday ${{ inputs.force && '--force' || '' }}
-      - run: .github/workflows/_commit.sh "intraday $(date -u +%Y-%m-%dT%H:%M)"
+      - if: always()  # commit whatever succeeded even when a collector failed
+        run: .github/workflows/_commit.sh "intraday $(date -u +%Y-%m-%dT%H:%M)"

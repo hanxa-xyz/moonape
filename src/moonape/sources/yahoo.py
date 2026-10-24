@@ -19,8 +19,9 @@ def _slug(ticker: str) -> str:
 
 
 def fetch(http: Http, ticker: str, range_: str = "1d", interval: str = "5m") -> pd.DataFrame:
+    # Yahoo rate-limits datacenter IPs (GitHub runners get 429 on every ticker); fail fast rather than burn minutes on retries
     js = http.get_json(URL.format(ticker=ticker), params={"range": range_, "interval": interval, "includePrePost": "false"},
-                       headers=HEADERS, fixture=f"yahoo/{_slug(ticker)}")
+                       headers=HEADERS, fixture=f"yahoo/{_slug(ticker)}", retries=1)
     res = (js.get("chart") or {}).get("result") or []
     if not res:
         return pd.DataFrame()
@@ -40,11 +41,15 @@ def fetch(http: Http, ticker: str, range_: str = "1d", interval: str = "5m") -> 
 
 def fetch_all(http: Http, range_: str = "1d", interval: str = "5m") -> pd.DataFrame:
     frames = []
+    blocked = False
     for t in config.YAHOO_TICKERS:
+        if blocked:
+            break
         try:
             frames.append(fetch(http, t, range_, interval))
         except FileNotFoundError:
             log.info("yahoo %s: no fixture, skipped", t)
         except Exception as e:
             log.warning("yahoo %s failed: %s", t, e)
+            blocked = "429" in str(e)  # once Yahoo says too-many-requests, the rest of the run will too
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
