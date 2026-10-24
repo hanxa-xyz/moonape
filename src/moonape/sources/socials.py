@@ -123,7 +123,7 @@ def truth_feed(http: Http, limit: int = 100, start_date: str | None = None) -> p
             "platform": "truth", "account": "realDonaldTrump", "account_name": config.TRUTH_ACCOUNTS["realDonaldTrump"],
             "post_id": it.findtext("truth:originalId", namespaces=NS) or it.findtext("guid"),
             "created_at": parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc) if it.findtext("pubDate") else pd.NaT,
-            "text": text or (it.findtext("title") or ""),
+            "text": text or re.sub(r"^\s*RT\s+@\w+\s*", "", it.findtext("title") or ""),  # media-only reposts have no body
             "url": it.findtext("truth:originalUrl", namespaces=NS) or it.findtext("link"),
             "likes": None, "reposts": None, "replies": None, "quotes": None, "views": None,
             "is_reply": False, "is_repost": post_type == "repost" or ref_type == "repost", "is_quote": post_type == "quote" or ref_type == "quote",
