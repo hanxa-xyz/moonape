@@ -3,114 +3,152 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>moonape · GME tracker</title>
-<meta name="description" content="GME options chain, max pain, IV, Superstonk DD, SEC filings, yields and yen — refreshed by GitHub Actions.">
+<title>moonape · GME</title>
+<meta name="description" content="GME options chain, max pain, implied volatility, Reddit and social feeds, SEC filings, rates and yen. Refreshed by GitHub Actions.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
-<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=202610241306">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/3.0.1/plotly.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<header class="top">
-  <div class="brand"><span class="moon">🌙</span> <strong>moonape</strong> <span class="sub">GME study tracker</span></div>
-  <nav class="tabs" role="tablist">
-    <button data-tab="overview" class="active">Overview</button>
-    <button data-tab="options">Options</button>
-    <button data-tab="iv">IV</button>
-    <button data-tab="reddit">Reddit</button>
-    <button data-tab="socials">Socials</button>
-    <button data-tab="sec">SEC</button>
-    <button data-tab="library">Library</button>
-    <button data-tab="about">About</button>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><span class="logo">🌙</span><span class="name">moonape</span></div>
+  <nav class="nav" role="tablist">
+    <button data-tab="home" class="active"><span class="ic">⌂</span>Home</button>
+    <button data-tab="options"><span class="ic">◔</span>Options</button>
+    <button data-tab="iv"><span class="ic">〜</span>Volatility</button>
+    <button data-tab="reddit"><span class="ic">◉</span>Reddit</button>
+    <button data-tab="socials"><span class="ic">✦</span>Socials</button>
+    <button data-tab="sec"><span class="ic">▤</span>SEC</button>
+    <button data-tab="library"><span class="ic">▣</span>Library</button>
+    <button data-tab="about"><span class="ic">ⓘ</span>About</button>
   </nav>
-  <div class="status" id="status">loading…</div>
-</header>
-
-<main>
-<section id="tab-overview" class="tab active">
-  <div class="tiles" id="tiles"></div>
-  <div class="grid two">
-    <figure><figcaption>GME vs SPY, last 5 sessions (indexed to first point = 100)</figcaption><div id="ch-intraday" class="chart"></div></figure>
-    <figure><figcaption>GME daily close, 1 year</figcaption><div id="ch-gme-daily" class="chart"></div></figure>
-    <figure><figcaption>Treasury par yields (2Y · 10Y · 30Y) and 10Y−2Y spread</figcaption><div id="ch-yields" class="chart"></div></figure>
-    <figure><figcaption>USD/JPY and DXY</figcaption><div id="ch-fx" class="chart"></div></figure>
+  <div class="side-foot">
+    <div class="status" id="status"><span class="dot"></span>loading…</div>
+    <button class="theme" id="theme-toggle" title="Toggle light / dark">◐</button>
   </div>
+</aside>
+
+<main class="main">
+<section id="tab-home" class="tab active">
+  <div class="card hero">
+    <div class="hero-head">
+      <div>
+        <div class="eyebrow">GameStop Corp. · NYSE</div>
+        <div class="ticker">GME</div>
+      </div>
+      <div class="hero-right"><div class="eyebrow" id="hero-asof"></div></div>
+    </div>
+    <div class="price" id="hero-price">—</div>
+    <div class="delta" id="hero-delta"></div>
+    <div id="hero-chart" class="rhchart"></div>
+    <div class="pills" id="hero-ranges">
+      <button data-r="1D" class="active">1D</button><button data-r="1W">1W</button><button data-r="1M">1M</button>
+      <button data-r="3M">3M</button><button data-r="1Y">1Y</button><button data-r="ALL">ALL</button>
+    </div>
+  </div>
+
+  <h2 class="h2">Options snapshot</h2>
+  <div class="stats" id="stats"></div>
+
+  <h2 class="h2">Watchlist</h2>
+  <div class="card list" id="watchlist"></div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title" id="macro-title">10-year Treasury yield</div>
+      <div class="row-controls">
+        <select id="macro-series"></select>
+        <div class="pills small" id="macro-ranges"><button data-r="1M">1M</button><button data-r="3M">3M</button><button data-r="1Y" class="active">1Y</button><button data-r="ALL">ALL</button></div>
+      </div>
+    </div>
+    <div class="price sm" id="macro-value">—</div>
+    <div class="delta sm" id="macro-delta"></div>
+    <div id="macro-chart" class="rhchart sm"></div>
+  </div>
+
+  <h2 class="h2">Latest</h2>
+  <div class="latest" id="latest"></div>
 </section>
 
 <section id="tab-options" class="tab">
-  <div class="toolbar">
+  <div class="filters">
     <label>Expiration <select id="exp-select"></select></label>
     <span id="opt-meta" class="muted"></span>
   </div>
-  <div class="grid two">
-    <figure><figcaption>Open interest by strike — calls above, puts below · max pain (orange) · spot (grey)</figcaption><div id="ch-oi" class="chart"></div></figure>
-    <figure><figcaption>Day volume by strike</figcaption><div id="ch-vol" class="chart"></div></figure>
-    <figure><figcaption>Pain curve: payout to holders if the stock settled at each strike</figcaption><div id="ch-pain" class="chart"></div></figure>
-    <figure><figcaption>Gamma exposure by strike, this expiration ($ per 1% move, dealer convention) · zero-gamma (dashed)</figcaption><div id="ch-gex" class="chart"></div></figure>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Open interest by strike</div><div class="card-sub">Calls above the line, puts below · max pain and spot marked</div><div id="ch-oi" class="chart"></div></div>
+    <div class="card"><div class="card-title">Volume today by strike</div><div class="card-sub">Day volume per contract</div><div id="ch-vol" class="chart"></div></div>
+    <div class="card"><div class="card-title">Pain curve</div><div class="card-sub">What option holders would be paid if the stock settled at each strike</div><div id="ch-pain" class="chart"></div></div>
+    <div class="card"><div class="card-title">Gamma exposure by strike</div><div class="card-sub">$ per 1% move, dealer convention · zero-gamma marked</div><div id="ch-gex" class="chart"></div></div>
   </div>
-  <figure><figcaption>Max pain, walls and put/call by expiration (OI is prior-day)</figcaption><div id="tbl-maxpain" class="tablewrap"></div></figure>
-  <div class="grid two">
-    <figure><figcaption>Front-expiry max pain vs spot, snapshot history</figcaption><div id="ch-mp-hist" class="chart"></div></figure>
-    <figure><figcaption>Put/call ratios (OI and day volume), snapshot history</figcaption><div id="ch-pc-hist" class="chart"></div></figure>
-    <figure><figcaption>FINRA off-exchange short volume share, GME</figcaption><div id="ch-finra" class="chart"></div></figure>
-    <figure><figcaption>OCC option volume by exchange, latest day</figcaption><div id="ch-occ" class="chart"></div></figure>
+  <div class="card"><div class="card-title">Max pain by expiration</div><div class="card-sub">Open interest is prior-day; walls are the largest-OI strikes</div><div id="tbl-maxpain" class="tablewrap"></div></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Max pain vs spot</div><div class="card-sub">Front and monthly expirations, every snapshot</div><div id="ch-mp-hist" class="chart"></div></div>
+    <div class="card"><div class="card-title">Put/call ratios</div><div class="card-sub">Open interest and day volume, every snapshot</div><div id="ch-pc-hist" class="chart"></div></div>
+    <div class="card"><div class="card-title">Off-exchange short volume share</div><div class="card-sub">FINRA daily file; off-exchange prints only</div><div id="ch-finra" class="chart"></div></div>
+    <div class="card"><div class="card-title">Option volume by exchange</div><div class="card-sub">OCC, latest day</div><div id="ch-occ" class="chart"></div></div>
   </div>
 </section>
 
 <section id="tab-iv" class="tab">
-  <div class="grid two">
-    <figure><figcaption>Term structure — ATM implied volatility by expiration</figcaption><div id="ch-term" class="chart"></div></figure>
-    <figure><figcaption>25-delta skew by expiration (put IV − call IV; positive = puts richer)</figcaption><div id="ch-skew" class="chart"></div></figure>
-    <figure><figcaption>Smile for the selected expiration (IV by strike)</figcaption><div id="ch-smile" class="chart"></div></figure>
-    <figure><figcaption>IV30 history (constant 30-day ATM, interpolated in variance)</figcaption><div id="ch-iv30" class="chart"></div></figure>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Term structure</div><div class="card-sub">At-the-money implied volatility by expiration</div><div id="ch-term" class="chart"></div></div>
+    <div class="card"><div class="card-title">25-delta skew</div><div class="card-sub">Put IV minus call IV; above zero means puts are richer</div><div id="ch-skew" class="chart"></div></div>
+    <div class="card"><div class="card-title">Smile</div><div class="card-sub" id="smile-sub">IV by strike for the selected expiration</div><div id="ch-smile" class="chart"></div></div>
+    <div class="card"><div class="card-title">IV30 history</div><div class="card-sub">Constant 30-day ATM, interpolated in variance</div><div id="ch-iv30" class="chart"></div></div>
   </div>
-  <figure><figcaption>Surface — mean IV by expiration × moneyness (K/S; puts below 1, calls above)</figcaption><div id="ch-surface" class="chart tall"></div></figure>
+  <div class="card"><div class="card-title">Surface</div><div class="card-sub">Mean IV by expiration and moneyness (K/S; puts below 1, calls above)</div><div id="ch-surface" class="chart tall"></div></div>
 </section>
 
 <section id="tab-reddit" class="tab">
-  <div class="toolbar">
+  <div class="filters">
     <div class="chips" id="sub-chips"></div>
     <div class="chips" id="flair-chips"></div>
-    <input id="post-search" type="search" placeholder="search titles…">
+    <input id="post-search" type="search" placeholder="Search titles">
   </div>
-  <div id="posts" class="posts"></div>
+  <div id="posts" class="feed"></div>
 </section>
 
 <section id="tab-socials" class="tab">
-  <div class="toolbar">
+  <div class="filters">
     <div class="chips" id="acct-chips"></div>
-    <input id="social-search" type="search" placeholder="search posts…">
+    <input id="social-search" type="search" placeholder="Search posts">
     <span id="social-meta" class="muted"></span>
   </div>
-  <div id="social-feed" class="posts feed"></div>
+  <div id="social-feed" class="feed"></div>
 </section>
 
 <section id="tab-sec" class="tab">
-  <div class="toolbar">
+  <div class="filters">
     <div class="chips" id="sec-chips"></div>
-    <input id="sec-search" type="search" placeholder="filter form or description…">
+    <input id="sec-search" type="search" placeholder="Filter form or description">
   </div>
-  <div id="filings" class="tablewrap"></div>
-  <h3>13F-HR filers reporting GME (CUSIP 36467W109), newest first</h3>
-  <div id="holders" class="tablewrap"></div>
+  <div class="card"><div id="filings" class="tablewrap"></div></div>
+  <h2 class="h2">13F-HR filers reporting GME</h2>
+  <div class="card"><div id="holders" class="tablewrap"></div></div>
 </section>
 
 <section id="tab-library" class="tab">
-  <div class="toolbar">
-    <input id="lib-search" type="search" placeholder="search titles, authors, excerpts…">
+  <div class="filters">
+    <input id="lib-search" type="search" placeholder="Search titles, authors, excerpts">
     <div class="chips" id="lib-chips"></div>
     <span id="lib-meta" class="muted"></span>
   </div>
-  <h3 id="lib-shelf-title">Start here</h3>
+  <h2 class="h2" id="lib-shelf-title">Start here</h2>
   <div id="lib-shelf" class="shelf"></div>
-  <h3>All books</h3>
+  <h2 class="h2">All books</h2>
   <div id="lib-grid" class="bookgrid"></div>
 </section>
 
 <section id="tab-about" class="tab">
-  <div class="prose" id="about"></div>
+  <div class="card prose" id="about"></div>
 </section>
+<footer>Data: Alpaca (indicative options feed, IEX stocks) · US Treasury · ECB via Frankfurter · Reddit via Arctic Shift · Truth Social via trumpstruth.org · SEC EDGAR · FINRA · OCC · FlipHTML5. Not investment advice. <a href="https://github.com/hanxa-xyz/moonape">Source</a></footer>
 </main>
-<footer>moonape · data: Alpaca (indicative options feed, IEX stocks), US Treasury, Yahoo, FRED, Reddit/Arctic Shift, SEC EDGAR, FINRA, OCC · not investment advice · <a href="https://github.com/hanxa-xyz/moonape">source</a></footer>
-<script src="app.js"></script>
+</div>
+<script src="app.js?v=202610241306"></script>
 </body>
 </html>

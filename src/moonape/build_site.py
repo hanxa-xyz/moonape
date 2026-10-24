@@ -136,10 +136,12 @@ def build_tiles(con, chain, mp, term, hist, out):
 
 
 def build_price_macro(con, out):
-    snaps = q(con, "SELECT symbol, ts, price, day_close, prev_close FROM stock_snapshots WHERE ts > now() - INTERVAL 7 DAY ORDER BY ts")
-    bars = q(con, "SELECT symbol, t, close, open, high, low, volume FROM stock_bars WHERE timeframe='1Day' "
+    snaps = q(con, "SELECT symbol, ts, price, day_close, prev_close FROM stock_snapshots WHERE ts::TIMESTAMPTZ > now() - INTERVAL 7 DAY "
+                   "QUALIFY row_number() OVER (PARTITION BY symbol, ts ORDER BY fetched_at DESC) = 1 ORDER BY ts")
+    bars = q(con, "SELECT symbol, t, close, volume FROM stock_bars WHERE timeframe='1Day' "
                   "QUALIFY row_number() OVER (PARTITION BY symbol, t ORDER BY fetched_at DESC) = 1 ORDER BY t")
-    bars15 = q(con, "SELECT symbol, t, close FROM stock_bars WHERE timeframe='15Min' QUALIFY row_number() OVER (PARTITION BY symbol, t ORDER BY fetched_at DESC) = 1 ORDER BY t")
+    bars15 = q(con, "SELECT symbol, t, close FROM stock_bars WHERE timeframe='15Min' AND t::TIMESTAMPTZ > now() - INTERVAL 12 DAY "
+                    "QUALIFY row_number() OVER (PARTITION BY symbol, t ORDER BY fetched_at DESC) = 1 ORDER BY t")
     tc = q(con, "SELECT date, tenor, yield FROM treasury_curve QUALIFY row_number() OVER (PARTITION BY date, tenor ORDER BY fetched_at DESC) = 1 ORDER BY date")
     yd = []
     if not tc.empty:
@@ -149,12 +151,13 @@ def build_price_macro(con, out):
         yd = records(wide[[c for c in ("date", "3M", "2Y", "5Y", "10Y", "30Y", "spread_10y2y") if c in wide.columns]])
     mi = q(con, "SELECT ticker, ts, close, interval FROM macro_intraday QUALIFY row_number() OVER (PARTITION BY ticker, ts, interval ORDER BY fetched_at DESC) = 1 ORDER BY ts")
     intr = {t: series(g[(g["interval"] != "1d") & (g["ts"] > g["ts"].max() - pd.Timedelta(days=7))], "ts", "close") for t, g in mi.groupby("ticker")} if not mi.empty else {}
+    intr = {t: v for t, v in intr.items() if v}
     daily = {t: series(g[g["interval"] == "1d"], "ts", "close") for t, g in mi.groupby("ticker")} if not mi.empty else {}
     fred = q(con, "SELECT series_id, date, value FROM fred QUALIFY row_number() OVER (PARTITION BY series_id, date ORDER BY fetched_at DESC) = 1 ORDER BY date")
     write(out, "price_macro.json", {
         "intraday": {s: series(g, "ts", "price") for s, g in snaps.groupby("symbol")} if not snaps.empty else {},
         "bars15": {s: series(g, "t", "close") for s, g in bars15.groupby("symbol")} if not bars15.empty else {},
-        "daily": {s: records(g, ["t", "open", "high", "low", "close", "volume"]) for s, g in bars.groupby("symbol")} if not bars.empty else {},
+        "daily": {s: [[_clean(t), _clean(c), _clean(v)] for t, c, v in zip(g["t"], g["close"], g["volume"])] for s, g in bars.groupby("symbol")} if not bars.empty else {},
         "yields_daily": yd, "macro_intraday": intr, "macro_daily": daily,
         "fred": {s: series(g, "date", "value") for s, g in fred.groupby("series_id")} if not fred.empty else {},
     })

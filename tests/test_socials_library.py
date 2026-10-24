@@ -23,7 +23,10 @@ def test_truth_feed_fixture(http):
     assert df["post_id"].str.isdigit().all() and df["url"].str.startswith("https://truthsocial.com/@realDonaldTrump/").all()
     assert df["created_at"].iloc[0].tzinfo == timezone.utc
     assert df["is_quote"].sum() >= 5 and df["is_repost"].sum() >= 1
-    assert not df["text"].str.startswith("RT:").any() and df["text"].str.len().min() > 0
+    assert not df["text"].str.startswith("RT").any() and df["text"].str.len().min() > 0
+    assert not df["text"].str.contains("Quoted Donald|Reposted Donald").any()
+    q = df[df["is_quote"]].iloc[0]
+    assert q["quoted_text"] and not q["quoted_text"].startswith("Quoted") and q["quoted_text"][:40] not in q["text"]
     assert df["media_url"].notna().sum() >= 1
 
 

@@ -87,6 +87,21 @@ def _x_row(t: dict, username: str) -> dict:
     }
 
 
+def _split_truth(desc_html: str, kind: str | None) -> tuple[str, str | None]:
+    """The mirror renders a quote as `<main>…</p><p>Quoted <a>Name</a>…` and a repost as `RT @handle…` + `<p>Reposted <a>Name</a>…`
+    (the reposted body twice). Return (own text, quoted text or None)."""
+    m = re.search(r"<p>\s*(Quoted|Reposted)\s+<a[^>]*>.*?</a>", desc_html, flags=re.S)
+    main_html, tail_html = (desc_html[:m.start()], desc_html[m.end():]) if m else (desc_html, "")
+    text = _strip(main_html)
+    text = re.sub(r"^\s*RT:\s*https?://\S*?/statuses/\d+\s*", "", text)  # "RT: <original url>" prefix on quotes (no space follows)
+    handles = "|".join(re.escape(h) for h in config.TRUTH_ACCOUNTS)
+    text = re.sub(rf"^\s*RT\s+@(?:{handles})\s*", "", text)  # "RT @handle" prefix on reposts (no space follows either)
+    quoted = _strip(tail_html) or None
+    if kind == "repost" and quoted and quoted[:80] == text[:80]:
+        quoted = None  # the mirror repeats the reposted body; keep one copy
+    return text, quoted
+
+
 # --- Truth Social via trumpstruth.org ------------------------------------------------------------------------
 def truth_feed(http: Http, limit: int = 100, start_date: str | None = None) -> pd.DataFrame:
     params = {"limit": limit}
@@ -97,11 +112,10 @@ def truth_feed(http: Http, limit: int = 100, start_date: str | None = None) -> p
     rows = []
     for it in root.iter("item"):
         desc = it.findtext("description") or ""
-        text = _strip(desc)
-        text = re.sub(r"^\s*RT:\s*https?://\S+\s*", "", text)  # mirror prefixes reposts with the original link
         post_type = it.findtext("archive:postType", namespaces=NS) or "original"
         ref = it.find("archive:reference", NS)
         ref_type = ref.get("type") if ref is not None else None
+        text, quoted = _split_truth(desc, post_type if post_type != "original" else ref_type)
         media = it.find("media:content", NS)
         rows.append({
             "platform": "truth", "account": "realDonaldTrump", "account_name": config.TRUTH_ACCOUNTS["realDonaldTrump"],
@@ -111,7 +125,7 @@ def truth_feed(http: Http, limit: int = 100, start_date: str | None = None) -> p
             "url": it.findtext("truth:originalUrl", namespaces=NS) or it.findtext("link"),
             "likes": None, "reposts": None, "replies": None, "quotes": None, "views": None,
             "is_reply": False, "is_repost": post_type == "repost" or ref_type == "repost", "is_quote": post_type == "quote" or ref_type == "quote",
-            "quoted_text": None, "quoted_url": (f"https://truthsocial.com/@realDonaldTrump/{ref.get('originalId')}" if ref is not None and ref.get("originalId") else None),
+            "quoted_text": quoted, "quoted_url": (f"https://truthsocial.com/@realDonaldTrump/{ref.get('originalId')}" if ref is not None and ref.get("originalId") else None),
             "media_url": media.get("url") if media is not None else None, "lang": "en", "source": "trumpstruth.org",
         })
     df = pd.DataFrame(rows, columns=COLS)
