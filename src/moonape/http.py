@@ -28,7 +28,7 @@ HOST_MIN_INTERVAL = {
     "efts.sec.gov": 0.12,
     "oauth.reddit.com": 0.65,
     "www.reddit.com": 0.65,
-    "arctic-shift.photon-reddit.com": 1.0,
+    "arctic-shift.photon-reddit.com": 2.5,
     "query1.finance.yahoo.com": 1.2,
     "query2.finance.yahoo.com": 1.2,
     "api.stlouisfed.org": 0.55,
@@ -113,9 +113,10 @@ class Http:
                 continue
             if r.status_code == 404 and ok_404:
                 return r
-            if r.status_code in (429, 500, 502, 503, 504) and attempt < retries:
+            slow_down = r.status_code == 422 and "slow down" in r.text.lower()  # Arctic Shift's query-timeout answer
+            if (r.status_code in (429, 500, 502, 503, 504) or slow_down) and attempt < retries:
                 retry_after = r.headers.get("Retry-After")
-                wait = float(retry_after) if retry_after and retry_after.isdigit() else min(90, 3 * 2**attempt + random.random())
+                wait = float(retry_after) if retry_after and retry_after.isdigit() else min(90, (8 if slow_down else 3) * 2**attempt + random.random())
                 log.warning("HTTP %s %s; sleeping %.1fs", r.status_code, url, wait)
                 time.sleep(wait)
                 continue

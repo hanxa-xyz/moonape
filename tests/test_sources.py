@@ -52,6 +52,7 @@ def test_reddit_arctic(http):
     assert df["flair"].str.contains("Due Diligence").sum() >= 25
     assert df["created_utc"].dt.tz is not None and df["score"].dtype.kind in "if"
     assert df["permalink"].str.startswith("https://www.reddit.com/").all()
+    assert set(df["subreddit"]) == {"Superstonk", "GME"}
 
 
 def test_edgar_submissions(http):

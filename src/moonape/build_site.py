@@ -210,10 +210,10 @@ def build_iv(con, chain, term, hist, out):
 
 
 def build_reddit(con, out):
-    posts = q(con, "SELECT id, created_utc, title, author, flair, score, num_comments, upvote_ratio, permalink, url, left(selftext, 320) AS preview, "
+    posts = q(con, "SELECT id, subreddit, created_utc, title, author, flair, score, num_comments, upvote_ratio, permalink, url, left(selftext, 320) AS preview, "
                    "length(selftext) AS selftext_len, source FROM reddit_posts QUALIFY row_number() OVER (PARTITION BY id ORDER BY fetched_at DESC) = 1 "
-                   "ORDER BY created_utc DESC LIMIT 400")
-    flairs = q(con, "SELECT flair, count(DISTINCT id) AS n FROM reddit_posts GROUP BY flair ORDER BY n DESC")
+                   "ORDER BY created_utc DESC LIMIT 600")
+    flairs = q(con, "SELECT subreddit, flair, count(DISTINCT id) AS n FROM reddit_posts GROUP BY 1, 2 ORDER BY n DESC")
     write(out, "reddit.json", {"posts": records(posts), "flairs": records(flairs)})
 
 

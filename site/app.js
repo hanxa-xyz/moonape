@@ -188,20 +188,24 @@
       { shapes: [vline(O.spot, C.grey, 'solid')], yaxis: { gridcolor: LINE, ticksuffix: '%' }, xaxis: { gridcolor: LINE, title: `strike · ${curExp}` } });
   }
 
-  // ---------------------------------------------------------------- Superstonk
-  let flair = 'Due Diligence';
+  // ---------------------------------------------------------------- Reddit
+  let flair = 'Due Diligence', sub = 'All';
+  const flairMatch = (f, g) => g === 'Due Diligence' ? /due diligence|\bDD\b/i.test(f || '') : (f || '').toLowerCase().includes(g.toLowerCase());
   function reddit() {
     const R = D.reddit || {}; const posts = R.posts || [];
     const groups = ['All', 'Due Diligence', 'Data', 'News', 'Discussion', 'Technical Analysis', 'Speculation', 'Education'];
+    const subs = ['All', ...new Set(posts.map(p => p.subreddit).filter(Boolean))];
+    const sc = $('#sub-chips'); sc.innerHTML = subs.map(g => `<span class="chip ${g === sub ? 'active' : ''}" data-s="${esc(g)}">${g === 'All' ? 'All subreddits' : 'r/' + esc(g)}</span>`).join('');
+    sc.querySelectorAll('.chip').forEach(c => c.onclick = () => { sub = c.dataset.s; reddit(); });
     const chips = $('#flair-chips'); chips.innerHTML = groups.map(g => `<span class="chip ${g === flair ? 'active' : ''}" data-f="${g}">${g}</span>`).join('');
     chips.querySelectorAll('.chip').forEach(c => c.onclick = () => { flair = c.dataset.f; reddit(); });
     $('#post-search').oninput = render;
     function render() {
       const qs = ($('#post-search').value || '').toLowerCase();
-      const rows = posts.filter(p => (flair === 'All' || (p.flair || '').toLowerCase().includes(flair.toLowerCase())) && (!qs || (p.title || '').toLowerCase().includes(qs)));
+      const rows = posts.filter(p => (sub === 'All' || p.subreddit === sub) && (flair === 'All' || flairMatch(p.flair, flair)) && (!qs || (p.title || '').toLowerCase().includes(qs)));
       if (!rows.length) return empty('#posts', posts.length ? 'no posts match' : 'no posts yet — run `moonape collect reddit`');
       $('#posts').innerHTML = rows.slice(0, 150).map(p => `<div class="post"><div class="t"><a href="${esc(p.permalink)}" target="_blank" rel="noopener">${esc(p.title)}</a></div>
-        <div class="m"><span class="flair ${/Due Diligence/.test(p.flair || '') ? 'dd' : ''}">${esc(p.flair || '—')}</span><span>▲ ${fmt0(p.score)}</span><span>💬 ${fmt0(p.num_comments)}</span>
+        <div class="m"><span class="muted">r/${esc(p.subreddit || 'Superstonk')}</span><span class="flair ${/due diligence|\bDD\b/i.test(p.flair || '') ? 'dd' : ''}">${esc(p.flair || '—')}</span><span>▲ ${fmt0(p.score)}</span><span>💬 ${fmt0(p.num_comments)}</span>
         <span>u/${esc(p.author)}</span><span>${ago(p.created_utc)}</span>${p.url && !/reddit\.com/.test(p.url) ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">link ↗</a>` : ''}<span class="muted">${esc(p.source)}</span></div>
         ${p.preview ? `<div class="p">${esc(p.preview)}${p.selftext_len > 320 ? '…' : ''}</div>` : ''}</div>`).join('');
     }

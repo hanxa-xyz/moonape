@@ -70,5 +70,6 @@ REDDIT_CLIENT_SECRET = os.environ.get("REDDIT_CLIENT_SECRET", "")
 REDDIT_USER_AGENT = os.environ.get("REDDIT_USER_AGENT", "script:moonape:0.1 (by u/hanxa-xyz)")
 SEC_USER_AGENT = os.environ.get("SEC_USER_AGENT", "moonape contact-not-set@example.com")
 
-SUBREDDIT = "Superstonk"
+SUBREDDITS = ["Superstonk", "GME"]
+SUBREDDIT = SUBREDDITS[0]  # kept for backwards compatibility
 DD_FLAIR = "Due Diligence"  # the live flair string is "📚 Due Diligence"; matched by substring

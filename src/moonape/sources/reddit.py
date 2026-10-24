@@ -14,16 +14,16 @@ from moonape.http import Http
 
 log = logging.getLogger("moonape.reddit")
 ARCTIC = "https://arctic-shift.photon-reddit.com/api/posts/search"
-COLS = ["id", "created_utc", "title", "author", "flair", "score", "num_comments", "upvote_ratio", "url", "permalink",
+COLS = ["id", "subreddit", "created_utc", "title", "author", "flair", "score", "num_comments", "upvote_ratio", "url", "permalink",
         "selftext", "is_self", "domain", "over_18", "source"]
 
 
-def _normalize(posts: list[dict], source: str) -> pd.DataFrame:
+def _normalize(posts: list[dict], source: str, subreddit: str | None = None) -> pd.DataFrame:
     rows = []
     for p in posts:
         pl = p.get("permalink") or ""
         rows.append({
-            "id": p.get("id"),
+            "id": p.get("id"), "subreddit": p.get("subreddit") or subreddit,
             "created_utc": datetime.fromtimestamp(float(p.get("created_utc") or 0), tz=timezone.utc),
             "title": p.get("title"), "author": p.get("author"), "flair": p.get("link_flair_text"),
             "score": _int(p.get("score")), "num_comments": _int(p.get("num_comments")),
@@ -55,17 +55,18 @@ def _bool(x):
 
 
 # --- Arctic Shift ---------------------------------------------------------------------------------------
-def arctic(http: Http, flair: str | None = None, limit: int = 100, before: int | None = None, after: str | None = None) -> pd.DataFrame:
-    params = {"subreddit": config.SUBREDDIT, "limit": limit, "sort": "desc"}
+def arctic(http: Http, flair: str | None = None, limit: int = 100, before: int | None = None, after: str | None = None,
+           subreddit: str = config.SUBREDDIT) -> pd.DataFrame:
+    params = {"subreddit": subreddit, "limit": limit, "sort": "desc"}
     if flair:
         params["link_flair_text"] = flair
     if before:
         params["before"] = before
     if after:
         params["after"] = after
-    fx = "reddit/arctic_dd" if flair else "reddit/arctic_new"
+    fx = "reddit/arctic_dd" if flair else ("reddit/arctic_new" if subreddit == "Superstonk" else f"reddit/arctic_{subreddit.lower()}_new")
     js = http.get_json(ARCTIC, params=params, headers={"User-Agent": config.REDDIT_USER_AGENT}, fixture=fx)
-    return _normalize(js.get("data", []), "arctic_shift")
+    return _normalize(js.get("data", []), "arctic_shift", subreddit)
 
 
 # --- Reddit OAuth (app-only) -----------------------------------------------------------------------------
@@ -79,33 +80,45 @@ def _token(http: Http) -> str:
     return r.json()["access_token"]
 
 
-def reddit_oauth(http: Http, token: str, flair: str | None = None, limit: int = 100) -> pd.DataFrame:
+def reddit_oauth(http: Http, token: str, flair: str | None = None, limit: int = 100, subreddit: str = config.SUBREDDIT) -> pd.DataFrame:
     headers = {"Authorization": f"bearer {token}", "User-Agent": config.REDDIT_USER_AGENT}
     if flair:
-        url = f"https://oauth.reddit.com/r/{config.SUBREDDIT}/search"
+        url = f"https://oauth.reddit.com/r/{subreddit}/search"
         params = {"q": f'flair_name:"{flair}"', "restrict_sr": 1, "sort": "new", "limit": limit, "t": "month", "raw_json": 1}
     else:
-        url = f"https://oauth.reddit.com/r/{config.SUBREDDIT}/new"
+        url = f"https://oauth.reddit.com/r/{subreddit}/new"
         params = {"limit": limit, "raw_json": 1}
     js = http.get_json(url, params=params, headers=headers)
     posts = [c["data"] for c in (js.get("data") or {}).get("children", [])]
-    return _normalize(posts, "reddit_oauth")
+    return _normalize(posts, "reddit_oauth", subreddit)
 
 
 # --- the collector entry point ----------------------------------------------------------------------------
 def fetch_latest(http: Http) -> pd.DataFrame:
-    """Newest posts plus the newest Due Diligence posts, from Reddit if credentialed else Arctic Shift."""
+    """Newest posts from each subreddit plus the newest Due Diligence posts on Superstonk.
+
+    Each query is independent: one slow Arctic Shift flair search must not lose the rest. Raises only if every query failed.
+    """
+    queries: list[tuple[str, str | None]] = [(s, None) for s in config.SUBREDDITS] + [("Superstonk", config.DD_FLAIR)]
+    frames, errors = [], []
+    tok = None
     if oauth_available():
         try:
             tok = _token(http)
-            new = reddit_oauth(http, tok)
-            dd = reddit_oauth(http, tok, config.DD_FLAIR)
-            return pd.concat([new, dd]).drop_duplicates("id").reset_index(drop=True)
         except Exception as e:
-            log.warning("reddit oauth failed (%s); falling back to Arctic Shift", e)
-    new = arctic(http)
-    dd = arctic(http, config.DD_FLAIR)
-    return pd.concat([new, dd]).drop_duplicates("id").reset_index(drop=True)
+            log.warning("reddit oauth token failed (%s); using Arctic Shift", e)
+    for sub, flair in queries:
+        try:
+            if tok:
+                frames.append(reddit_oauth(http, tok, flair, subreddit=sub))
+            else:
+                frames.append(arctic(http, flair, subreddit=sub))
+        except Exception as e:
+            errors.append(f"{sub}/{flair or 'new'}: {e}")
+            log.warning("reddit query %s %s failed: %s", sub, flair or "new", e)
+    if not frames:
+        raise RuntimeError("every reddit query failed: " + "; ".join(errors))
+    return pd.concat(frames).drop_duplicates("id").sort_values("created_utc", ascending=False).reset_index(drop=True)
 
 
 def backfill_dd(http: Http, days: int = 365, max_pages: int = 40) -> pd.DataFrame:
