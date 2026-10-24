@@ -41,3 +41,8 @@ def test_book_text_layer(http):
     stats, text = library.fetch_books_text(http, ["jpfu", "nope"])  # missing fixture is skipped, not fatal
     assert len(stats) == 1 and stats["text_pages"].iloc[0] >= 4 and stats["excerpt"].iloc[0].startswith("GMEdd.com")
     assert (text["blink"] == "jpfu").all() and text["page"].min() == 3
+
+
+def test_text_cleaner_drops_lone_surrogates():
+    assert library._clean("GME \ud83d to the  moon") == "GME to the moon"
+    "x".join(library._clean("ok \ud83d\ude80")).encode("utf-8")  # must be encodable

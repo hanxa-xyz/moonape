@@ -59,7 +59,15 @@ def fetch_text(http: Http, blink: str) -> list[str]:
     except json.JSONDecodeError as e:
         log.warning("library %s: text layer not parseable (%s)", blink, e)
         return []
-    return [re.sub(r"\s+", " ", (p or "")).strip() for p in pages if isinstance(p, str) or p is None]
+    return [_clean(p) for p in pages if isinstance(p, str) or p is None]
+
+
+_LONE_SURROGATE = re.compile(r"[\ud800-\udfff]")
+
+
+def _clean(page: str | None) -> str:
+    """Collapse whitespace and drop lone UTF-16 surrogates (FlipHTML5 escapes emoji as split pairs), which parquet cannot encode."""
+    return re.sub(r"\s+", " ", _LONE_SURROGATE.sub("", page or "")).strip()
 
 
 def excerpt(pages: list[str], n: int = 500) -> str:
