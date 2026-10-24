@@ -10,3 +10,4 @@ out/
 *.duckdb.wal
 .DS_Store
 notebooks/.ipynb_checkpoints/
+site/data/

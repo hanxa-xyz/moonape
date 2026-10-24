@@ -1,11 +1,11 @@
 name: pages
-# Deploys site/ to GitHub Pages. Called by every collector after it commits (pushes made with GITHUB_TOKEN never trigger
-# other workflows, so a plain `on: push` would miss every bot commit), and also on human pushes that touch site/.
+# Builds site/data/*.json from data/ and deploys site/ to GitHub Pages. Called by every collector after it commits
+# (pushes made with GITHUB_TOKEN never trigger other workflows), and on human pushes that touch site/ or the builder.
 on:
   workflow_call:
   push:
     branches: [main]
-    paths: ["site/**"]
+    paths: ["site/**", "src/moonape/build_site.py", "library/**"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { ref: main }   # the branch tip, which includes the commit the calling collector just pushed
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -q -e .
+      - name: build site data from data/
+        env:
+          TWITTERAPI_IO_KEY: ${{ secrets.TWITTERAPI_IO_KEY }}   # only read to label whether X is enabled
+        run: moonape site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }

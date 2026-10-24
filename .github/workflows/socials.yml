@@ -22,7 +22,7 @@ jobs:
       - name: collect socials
         env:
           TWITTERAPI_IO_KEY: ${{ secrets.TWITTERAPI_IO_KEY }}
-        run: moonape collect socials
+        run: moonape collect socials --no-site
       - if: always()  # commit whatever succeeded even when a collector failed
         run: .github/workflows/_commit.sh "socials $(date -u +%Y-%m-%dT%H:%M)"
   pages:

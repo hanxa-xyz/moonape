@@ -17,7 +17,7 @@ Scheduled collectors (GitHub Actions) + a static dashboard (GitHub Pages at **mo
 | USD/JPY, DXY, intraday yields | Yahoo chart JSON (keyless; rate-limits GitHub runners, so best effort) + Frankfurter/ECB USD/JPY daily (keyless, reliable) | every 30 min / daily |
 | FINRA off-exchange short volume, OCC option volume by exchange | FINRA CDN, OCC marketdata (keyless) | daily |
 
-Raw rows land as parquet in `data/` (one file per run, compacted per day) and are the study dataset: `moonape db --sql "select … from option_chain"`.
+Raw rows land as parquet in `data/` (one file per run, compacted per day) and are the study dataset; `site/data/*.json` is built from them at deploy time and is not committed: `moonape db --sql "select … from option_chain"`.
 
 ## Start tracking
 
@@ -47,7 +47,7 @@ Then trigger the workflows once (`gh workflow run intraday.yml -f force=true`, `
 - `reddit.yml` — `15 * * * *` (both subreddits + the Truth Social mirror)
 - `socials.yml` — `25 1,7,13,19 * * *` (X through twitterapi.io; raise the cadence or `X_PAGES_PER_ACCOUNT` once you know the bill)
 - `daily.yml` — `45 22 * * 1-5` (contracts/OI, Treasury, FRED, FINRA, OCC, EDGAR, compaction); `-f backfill=true` for history
-- `pages.yml` — deploys `site/` on every push that touches it; `ci.yml` — ruff + pytest + the whole pipeline on fixtures
+- `pages.yml` — builds `site/data` from `data/` and deploys `site/`; called by every collector after its commit (bot pushes cannot trigger `on: push`), and on pushes touching `site/`; `ci.yml` — ruff + pytest + the whole pipeline on fixtures
 
 ### Dashboard: moonape.hanxa.xyz
 DNS (Squarespace → hanxa.xyz → DNS settings): `CNAME  moonape  →  hanxa-xyz.github.io`. Then in the repo: Settings → Pages → custom domain `moonape.hanxa.xyz`, enforce HTTPS (or `gh api -X PUT repos/hanxa-xyz/moonape/pages -f cname=moonape.hanxa.xyz`).
